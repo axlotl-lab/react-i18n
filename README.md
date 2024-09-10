@@ -7,7 +7,7 @@ The `useTranslations` hook provides a versatile way to manage translations in yo
 Add the `TranslationsProvider` component to your application:
 
 ```jsx
-import { TranslationsProvider } from '@axlotl-lab/react-toolkit/hooks';
+import { TranslationsProvider } from '@axlotl-lab/react-i18n';
 
 function App() {
   return (
@@ -28,7 +28,7 @@ function App() {
 Then, you can use the `useTranslations` hook in your components:
 
 ```jsx
-import { useTranslations } from '@axlotl-lab/react-toolkit/hooks';
+import { useTranslations } from '@axlotl-lab/react-i18n';
 
 const translations = {
   greetings: {
@@ -99,7 +99,7 @@ It is completely type-safe, ensuring that all translation keys are properly defi
 To set global translations:
 
 ```typescript
-import { setGlobalTranslations } from '@axlotl-lab/react-toolkit/hooks';
+import { setGlobalTranslations } from '@axlotl-lab/react-i18n';
 
 setGlobalTranslations({
   common: {
@@ -139,7 +139,7 @@ export type GlobalTranslationsType = typeof globalTranslations;
 // global.d.ts
 import { common } from "./translations/common";
 
-declare module "@axlotl-lab/react-toolkit/hooks" {
+declare module "@axlotl-lab/react-i18n" {
   type GlobalTranslations = typeof common
 }
 ```
@@ -147,7 +147,7 @@ declare module "@axlotl-lab/react-toolkit/hooks" {
 3. Now, when you use the `useTranslations` hook, you'll get autocomplete for both global and local translations:
 
 ```typescript
-import { useTranslations } from '@axlotl-lab/react-toolkit/hooks';
+import { useTranslations } from '@axlotl-lab/react-i18n';
 
 function MyComponent() {
   const t = useTranslations({ translations });
