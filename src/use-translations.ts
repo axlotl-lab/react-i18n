@@ -18,7 +18,7 @@ type UseTranslationsProps<T> = { translations?: NestedTranslations<T> }
 type ComponentFunction = (text?: string) => React.ReactNode;
 
 type StaticTranslationFunction<T> = (
-  key: TranslationKey<T>, values?: Record<string, string>
+  key: TranslationKey<T>, values?: Record<string, string | number>
 ) => string
 
 type RichTranslationFunction<T> = (
