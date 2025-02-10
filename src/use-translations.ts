@@ -89,7 +89,10 @@ export const useTranslations = <T>({ translations }: UseTranslationsProps<T> = {
       }
 
       if (components[tag]) {
-        result.push(components[tag](content?.trim()));
+        const key = `${tag}-${index}`;
+        const componentContent = content?.trim();
+        const element = components[tag](componentContent);
+        result.push(React.createElement(React.Fragment, { key }, element));
       } else {
         result.push(match);
       }

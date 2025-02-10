@@ -121,7 +121,15 @@ describe('Translations', () => {
       const value = result.current.rich('richWelcome', {
         name: (content) => <strong>{content}</strong>
       });
-      expect(value).toEqual(['Welcome, ', <strong>John</strong>, '!']);
+
+      expect(value).toMatchObject([
+        "Welcome, ",
+        expect.objectContaining({
+          type: React.Fragment,
+          props: { children: <strong>John</strong> }
+        }),
+        "!"
+      ]);
     });
 
     it('should return key if translation is not found', () => {
@@ -239,8 +247,13 @@ describe('Translations', () => {
         expect(result.current('parent.child')).toBe('Nested translation');
 
         const richResult = result.current.rich('richKey', { bold: (content) => <b>{content}</b> });
-        expect(richResult).toEqual(['Rich ', <b>translation</b>]);
-
+        expect(richResult).toMatchObject([
+          "Rich ",
+          expect.objectContaining({
+            type: React.Fragment,
+            props: { children: <b>translation</b> }
+          })
+        ]);
         expect(consoleSpy).not.toHaveBeenCalled();
       });
     });
