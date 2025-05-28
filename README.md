@@ -2,6 +2,8 @@
 
 The `useTranslations` hook provides a versatile way to manage translations in your React application, supporting nested keys, parameter interpolation, and rich content with React components.
 
+[![npm version](https://img.shields.io/npm/v/@axlotl-lab/react-i18n.svg)](https://www.npmjs.com/package/@axlotl-lab/react-i18n)
+
 ## Usage
 
 Add the `TranslationsProvider` component to your application:
