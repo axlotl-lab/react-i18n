@@ -2,7 +2,7 @@
 
 The `useTranslations` hook provides a versatile way to manage translations in your React application, supporting nested keys, parameter interpolation, and rich content with React components.
 
-### Usage
+## Usage
 
 Add the `TranslationsProvider` component to your application:
 
@@ -18,14 +18,16 @@ function App() {
 }
 ```
 
-#### Parameters
+### Parameters
 
-| Parameter      | Type                      | Required | Default | Description                                    |
-|----------------|---------------------------|----------|---------|------------------------------------------------|
-| locale         | string                    | Yes      | -       | The locale to use for translations in the entire application |
-| fallbackLocale | string                    | Yes      | -       | Fallback locale if translation is not found    |
+| Parameter      | Type   | Required | Default | Description                                              |
+|----------------|--------|----------|---------|----------------------------------------------------------|
+| locale         | string | Yes      | -       | The locale to use for translations in the entire application |
+| fallbackLocale | string | Yes      | -       | Fallback locale if translation is not found             |
 
-Then, you can use the `useTranslations` hook in your components:
+## Basic Translation Usage
+
+Use the `useTranslations` hook in your components:
 
 ```jsx
 import { useTranslations } from '@axlotl-lab/react-i18n';
@@ -35,8 +37,8 @@ const translations = {
     hello: { en: 'Hello', es: 'Hola' },
     welcome: { en: 'Welcome, {name}!', es: '¡Bienvenido, {name}!' },
     richWelcome: { 
-      en: 'Welcome to our <bold>website</bold>! <image/>',
-      es: '¡Bienvenido a nuestro <bold>sitio web</bold>! <image/>'
+      en: 'Welcome to our <bold>amazing website</bold>! <image/>',
+      es: '¡Bienvenido a nuestro <bold>increíble sitio web</bold>! <image/>'
     }
   }
 };
@@ -57,46 +59,109 @@ function MyComponent() {
 }
 ```
 
-### Parameter interpretation
-Allows passing parameters to be interpolated into the translation strings.
+## Features
 
-#### Example:
+### Parameter Interpolation
+
+Pass parameters to be interpolated into translation strings using `{parameterName}` syntax:
+
 ```javascript
 const translations = {
-  greetings: {
-    welcome: { en: 'Welcome, {name}!', es: '¡Bienvenido, {name}!' },
+  messages: {
+    itemCount: { 
+      en: 'You have {count} item{count}', 
+      es: 'Tienes {count} elemento{count}' 
+    },
+    userProfile: { 
+      en: 'Hello {name}, you are {age} years old', 
+      es: 'Hola {name}, tienes {age} años' 
+    }
   }
 };
 ```
 
 ```jsx
-{t('greetings.welcome', { name: 'John' })}
-{/*Output: Welcome, John! */}
-```	
+{t('messages.itemCount', { count: 5 })}
+{/* Output: You have 5 items */}
 
-### Rich content
-Supports embedding React components within translations.
+{t('messages.userProfile', { name: 'John', age: 25 })}
+{/* Output: Hello John, you are 25 years old */}
+```
 
-#### Example:
+### Rich Content with React Components
+
+Embed React components within translations using XML-like tags:
+
 ```javascript
 const translations = {
-  greetings: {
-    welcome: { en: 'Welcome, <name>!', es: '¡Bienvenido, <name>!' },
+  content: {
+    announcement: { 
+      en: 'Visit our <link>documentation</link> and join our <discord>Discord</discord>!',
+      es: '¡Visita nuestra <link>documentación</link> y únete a nuestro <discord>Discord</discord>!'
+    }
   }
 };
 ```
 
 ```jsx
-{t.rich('greetings.welcome', { name: (content) => <strong>{content}</strong> })}
-{/*Output: Welcome, <strong>John</strong>! */}
+{t.rich('content.announcement', {
+  link: (text) => <a href="/docs" className="text-blue-500">{text}</a>,
+  discord: (text) => <a href="/discord" className="text-purple-500">{text}</a>
+})}
+{/* Output: Visit our <a href="/docs" class="text-blue-500">documentation</a> and join our <a href="/discord" class="text-purple-500">Discord</a>! */}
 ```
 
-#### Type Safety
-It is completely type-safe, ensuring that all translation keys are properly defined and accessible.
+### Self-Closing Tags
 
-### Global Translations
+Rich content also supports self-closing tags for components without content:
 
-To set global translations:
+```javascript
+const translations = {
+  ui: {
+    separator: { 
+      en: 'Before <divider/> After',
+      es: 'Antes <divider/> Después'
+    }
+  }
+};
+```
+
+```jsx
+{t.rich('ui.separator', {
+  divider: () => <hr className="my-4" />
+})}
+```
+
+### Translation Key Existence Check
+
+Check if a translation key exists before using it:
+
+```jsx
+const t = useTranslations({ translations });
+
+if (t.exists('greetings.hello')) {
+  return <p>{t('greetings.hello')}</p>;
+}
+```
+
+### Current Locale Access
+
+Access the current locale from the hook:
+
+```jsx
+const t = useTranslations({ translations });
+
+return (
+  <div>
+    <p>Current language: {t.locale}</p>
+    <p>{t('greetings.hello')}</p>
+  </div>
+);
+```
+
+## Global Translations
+
+Set translations that are available throughout your entire application:
 
 ```typescript
 import { setGlobalTranslations } from '@axlotl-lab/react-i18n';
@@ -104,18 +169,42 @@ import { setGlobalTranslations } from '@axlotl-lab/react-i18n';
 setGlobalTranslations({
   common: {
     submit: { en: 'Submit', es: 'Enviar' },
-    cancel: { en: 'Cancel', es: 'Cancelar' }
+    cancel: { en: 'Cancel', es: 'Cancelar' },
+    loading: { en: 'Loading...', es: 'Cargando...' }
+  },
+  navigation: {
+    home: { en: 'Home', es: 'Inicio' },
+    about: { en: 'About', es: 'Acerca de' }
   }
 });
 ```
 
-Global translations are merged with local translations, with local translations taking precedence in case of conflicts.
+Global translations are automatically merged with local translations. Local translations take precedence in case of conflicts.
 
-#### Autocomplete for Global Translations
+```jsx
+function MyComponent() {
+  const localTranslations = {
+    page: {
+      title: { en: 'My Page', es: 'Mi Página' }
+    }
+  };
+  
+  const t = useTranslations({ translations: localTranslations });
 
-To enable autocomplete for global translations in your IDE, you can define a type for your global translations and extend the `GlobalTranslations` interface. Here's how to set it up:
+  return (
+    <div>
+      <h1>{t('page.title')}</h1> {/* Local translation */}
+      <button>{t('common.submit')}</button> {/* Global translation */}
+    </div>
+  );
+}
+```
 
-1. Define your global translations type:
+### TypeScript Autocomplete for Global Translations
+
+To enable IDE autocomplete for global translations:
+
+1. **Define your global translations:**
 
 ```typescript
 // globalTranslations.ts
@@ -133,18 +222,18 @@ export const globalTranslations = {
 export type GlobalTranslationsType = typeof globalTranslations;
 ```
 
-2. Create a declaration file (e.g., `global.d.ts`) in your project root or src directory:
+2. **Create a type declaration file:**
 
 ```typescript
-// global.d.ts
-import { common } from "./translations/common";
+// global.d.ts or types/react-i18n.d.ts
+import { GlobalTranslationsType } from './globalTranslations';
 
 declare module "@axlotl-lab/react-i18n" {
-  type GlobalTranslations = typeof common
+  type GlobalTranslations = GlobalTranslationsType;
 }
 ```
 
-3. Now, when you use the `useTranslations` hook, you'll get autocomplete for both global and local translations:
+3. **Use with full autocomplete support:**
 
 ```typescript
 import { useTranslations } from '@axlotl-lab/react-i18n';
@@ -154,22 +243,34 @@ function MyComponent() {
 
   return (
     <div>
-      <button>{t('common.submit')}</button> {/* Autocomplete works for global translations */}
-      <p>{t('myLocalKey')}</p> {/* Autocomplete works for local translations */}
+      <button>{t('common.submit')}</button> {/* ✅ Autocomplete works */}
+      <p>{t('myLocalKey')}</p> {/* ✅ Autocomplete works */}
     </div>
   );
 }
 ```
 
-By following these steps, your IDE will provide autocomplete suggestions for global translation keys, improving developer experience and reducing errors.
-
 Make sure your `tsconfig.json` includes the path to your declaration file.
 
-This setup allows you to maintain type safety and get autocomplete for your global translations across your entire project.
+## Type Safety
 
-#### Notes
+The hook is fully type-safe, ensuring that:
 
-- Ensure that all your translation objects follow the same structure across different locales.
-- The hook will return the key itself if no translation is found (in case you use `as any`), allowing for easy identification of missing translations.
-- When using rich translations, make sure to provide all necessary component functions to avoid unprocessed tags in the output.
-- Global translations are merged with local translations using a deep merge function, ensuring that all nested structures are properly combined.
+- All translation keys are properly defined and accessible
+- Parameter names in interpolation match the translation strings
+- Component functions in rich content correspond to the tags used
+- Global and local translation keys are both autocompleted
+
+## Best Practices
+
+- Ensure all translation objects follow the same structure across different locales
+- Use meaningful, nested keys for better organization (e.g., `common.buttons.save` instead of `saveButton`)
+- Define global translations for commonly used text across your application
+- Use the `exists` method to conditionally render content based on translation availability
+- When using rich translations, always provide all necessary component functions to avoid unprocessed tags
+
+## Notes
+
+- Global translations are merged with local translations using a deep merge function
+- The hook will return the key itself if no translation is found, making it easy to identify missing translations during development
+- Rich content uses a regex-based parser to handle XML-like tags within translation strings
