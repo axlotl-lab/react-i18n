@@ -1,6 +1,6 @@
 {
   "name": "@axlotl-lab/react-i18n",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "A versatile way to manage translations in your React application.",
   "exports": {
     ".": {
