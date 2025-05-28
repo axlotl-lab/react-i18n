@@ -112,7 +112,10 @@ export const useTranslations = <T>({ translations }: UseTranslationsProps<T> = {
     return Boolean(getNestedValue(combinedTranslations, key))
   }
 
-  const t = Object.assign(staticMessages, { rich: richMessages, exists });
+  const t = Object.assign(staticMessages, {
+    rich: richMessages, exists,
+    locale: context.locale
+  });
 
   return t;
 };

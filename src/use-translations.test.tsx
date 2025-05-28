@@ -173,6 +173,17 @@ describe('Translations', () => {
       expect(result2.current('key1' as any)).toBe('key1');
     });
 
+    it('should return the current locale', () => {
+      const wrapper1 = mockTranslationsProvider('es');
+      const wrapper2 = mockTranslationsProvider('en');
+
+      const { result: result1 } = renderHook(() => useTranslations(), { wrapper: wrapper1 });
+      const { result: result2 } = renderHook(() => useTranslations(), { wrapper: wrapper2 });
+
+      expect(result1.current.locale).toBe('es');
+      expect(result2.current.locale).toBe('en');
+    });
+
     describe('handling non-existent keys', () => {
       let consoleSpy: jest.SpyInstance;
 
