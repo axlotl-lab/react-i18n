@@ -31,7 +31,28 @@ export function setGlobalTranslations<T>(translations: NestedTranslations<T>) {
   globalTranslations = translations;
 }
 
-export const useTranslations = <T>({ translations }: UseTranslationsProps<T> = {}) => {
+/**
+ * @deprecated Use `useTranslations(translations)` instead of `useTranslations({ translations })`
+ */
+export function useTranslations<T>(props: UseTranslationsProps<T>): StaticTranslationFunction<T> & {
+  rich: RichTranslationFunction<T>;
+  exists: (key: string) => boolean;
+  locale: string;
+};
+
+export function useTranslations<T>(translations?: NestedTranslations<T>): StaticTranslationFunction<T> & {
+  rich: RichTranslationFunction<T>;
+  exists: (key: string) => boolean;
+  locale: string;
+};
+
+export function useTranslations<T>(
+  translationsOrProps?: NestedTranslations<T> | UseTranslationsProps<T>
+) {
+  // Detectar si se pasó el formato antiguo { translations } o el nuevo (directamente)
+  const translations = translationsOrProps && typeof translationsOrProps === 'object' && 'translations' in translationsOrProps
+    ? translationsOrProps.translations
+    : translationsOrProps as NestedTranslations<T> | undefined;
   const context = React.useContext(TranslationsProviderContext);
 
   if (!context) {
