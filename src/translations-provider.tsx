@@ -10,7 +10,7 @@ export const TranslationsProviderContext = React.createContext<TranslationsProvi
 export const TranslationsProvider = ({ locale, fallbackLocale, children }: TranslationsProviderProps) => {
   const context = React.useMemo(() => {
     return { locale, fallbackLocale }
-  }, [locale]);
+  }, [locale, fallbackLocale]);
 
   return (
     <TranslationsProviderContext.Provider value={context}>
