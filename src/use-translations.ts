@@ -99,12 +99,14 @@ export function useTranslations<T>(
       return key;
     }
 
-    const regex = /<(\w+)(\s*\/>|>([^<]*))<\/\1>/g;
+    const regex = /<(\w+)\s*\/>|<(\w+)>([^<]*)<\/\2>/g;
 
     let lastIndex = 0;
     const result: React.ReactNode[] = [];
 
-    translation.replace(regex, (match, tag, _, content, index) => {
+    translation.replace(regex, (match, selfClosingTag, pairedTag, content, index) => {
+      const tag = selfClosingTag ?? pairedTag;
+
       if (index > lastIndex) {
         result.push(translation.slice(lastIndex, index));
       }

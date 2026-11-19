@@ -132,6 +132,40 @@ describe('Translations', () => {
       ]);
     });
 
+    it('should handle self-closing tags in rich text translations', () => {
+      const wrapper = mockTranslationsProvider('en');
+
+      const selfClosingTranslations = {
+        separator: { en: 'Before <divider/> After' },
+        spaced: { en: 'Line<br />Break' },
+        mixed: { en: 'Visit <link>docs</link> <icon/>' }
+      };
+
+      const { result } = renderHook(() => useTranslations(selfClosingTranslations), { wrapper });
+
+      expect(result.current.rich('separator', { divider: () => <hr /> })).toMatchObject([
+        "Before ",
+        expect.objectContaining({ type: React.Fragment, props: { children: <hr /> } }),
+        " After"
+      ]);
+
+      expect(result.current.rich('spaced', { br: () => <br /> })).toMatchObject([
+        "Line",
+        expect.objectContaining({ type: React.Fragment, props: { children: <br /> } }),
+        "Break"
+      ]);
+
+      expect(result.current.rich('mixed', {
+        link: (text) => <a>{text}</a>,
+        icon: () => <i />
+      })).toMatchObject([
+        "Visit ",
+        expect.objectContaining({ type: React.Fragment, props: { children: <a>docs</a> } }),
+        " ",
+        expect.objectContaining({ type: React.Fragment, props: { children: <i /> } })
+      ]);
+    });
+
     it('should return key if translation is not found', () => {
       const wrapper = mockTranslationsProvider('en');
       const { result } = renderHook(() => useTranslations(), { wrapper });
