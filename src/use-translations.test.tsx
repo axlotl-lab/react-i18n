@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react';
+import { render, renderHook } from '@testing-library/react';
 import React from 'react';
 import { TranslationsProviderContext } from './translations-provider';
 import { setGlobalTranslations, useTranslations } from './use-translations';
@@ -360,5 +360,109 @@ describe('Translations', () => {
         expect(existingResult).toBeTruthy();
       });
     })
+  });
+
+  describe('performance', () => {
+    const translations = {
+      greetings: {
+        hello: { en: 'Hello', es: 'Hola' }
+      }
+    };
+
+    afterEach(() => {
+      setGlobalTranslations({});
+    });
+
+    it('should return the same t across re-renders', () => {
+      const wrapper = mockTranslationsProvider('es');
+      const { result, rerender } = renderHook(() => useTranslations(translations), { wrapper });
+
+      const first = result.current;
+      rerender();
+
+      expect(result.current).toBe(first);
+    });
+
+    it('should return the same t across re-renders with the deprecated { translations } format', () => {
+      const wrapper = mockTranslationsProvider('es');
+      const { result, rerender } = renderHook(() => useTranslations({ translations }), { wrapper });
+
+      const first = result.current;
+      rerender();
+
+      expect(result.current).toBe(first);
+    });
+
+    it('should not re-run effects that depend on t on every render', () => {
+      const wrapper = mockTranslationsProvider('es');
+      const effect = jest.fn();
+
+      const { rerender } = renderHook(() => {
+        const t = useTranslations(translations);
+        React.useEffect(() => { effect(t('greetings.hello')); }, [t]);
+      }, { wrapper });
+
+      rerender();
+      rerender();
+
+      expect(effect).toHaveBeenCalledTimes(1);
+    });
+
+    it('should return a new t when the locale changes', () => {
+      const ts: unknown[] = [];
+      const Component = () => {
+        const t = useTranslations(translations);
+        ts.push(t);
+        return <span>{t('greetings.hello')}</span>;
+      };
+
+      const { rerender, getByText } = render(
+        <TranslationsProviderContext.Provider value={{ locale: 'es', fallbackLocale: 'en' }}>
+          <Component />
+        </TranslationsProviderContext.Provider>
+      );
+      expect(getByText('Hola')).toBeDefined();
+
+      rerender(
+        <TranslationsProviderContext.Provider value={{ locale: 'en', fallbackLocale: 'en' }}>
+          <Component />
+        </TranslationsProviderContext.Provider>
+      );
+      expect(getByText('Hello')).toBeDefined();
+      expect(ts[ts.length - 1]).not.toBe(ts[0]);
+    });
+
+    it('should resolve local over global per locale, falling back to global for missing locales', () => {
+      setGlobalTranslations({
+        shared: { en: 'Global EN', es: 'Global ES' },
+        section: { fromGlobal: { en: 'From global' } }
+      });
+
+      const local = {
+        shared: { es: 'Local ES' },
+        section: { fromLocal: { en: 'From local' } }
+      };
+
+      const { result: es } = renderHook(() => useTranslations(local), { wrapper: mockTranslationsProvider('es') });
+      const { result: en } = renderHook(() => useTranslations(local), { wrapper: mockTranslationsProvider('en') });
+      const { result: fr } = renderHook(() => useTranslations(local), { wrapper: mockTranslationsProvider('fr', 'es') });
+
+      expect(es.current('shared')).toBe('Local ES');
+      expect(en.current('shared')).toBe('Global EN');
+      expect(fr.current('shared')).toBe('Local ES');
+      expect(en.current('section.fromLocal')).toBe('From local');
+      expect(en.current('section.fromGlobal' as any)).toBe('From global');
+      expect(en.current.exists('section.fromGlobal')).toBe(true);
+    });
+
+    it('should pick up global translations set after the first render', () => {
+      const wrapper = mockTranslationsProvider('en');
+      const { result, rerender } = renderHook(() => useTranslations(translations), { wrapper });
+
+      setGlobalTranslations({ late: { en: 'Late global' } });
+      rerender();
+
+      expect(result.current('late' as any)).toBe('Late global');
+    });
   });
 });

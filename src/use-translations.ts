@@ -1,5 +1,4 @@
 import React from "react";
-import { deepMerge } from "./deep-merge";
 import { TranslationsProviderContext } from "./translations-provider";
 import { FlattenObjectKeys, NestedTranslations } from "./types";
 
@@ -25,7 +24,21 @@ type RichTranslationFunction<T> = (
   key: TranslationKey<T>, components?: Record<string, ComponentFunction>
 ) => React.ReactNode
 
-let globalTranslations = {};
+let globalTranslations: unknown = {};
+
+/**
+ * Walks `path` (dot-separated) inside `obj` and returns the object found there, if any.
+ */
+function getNode(obj: unknown, path: string): Record<string, string> | undefined {
+  let current: any = obj;
+  for (const part of path.split('.')) {
+    if (current == null || current[part] === undefined) {
+      return undefined;
+    }
+    current = current[part];
+  }
+  return current !== null && typeof current === 'object' ? current : undefined;
+}
 
 export function setGlobalTranslations<T>(translations: NestedTranslations<T>) {
   globalTranslations = translations;
@@ -59,83 +72,85 @@ export function useTranslations<T>(
     throw new Error('It seems that the provider `<TranslationsProvider />` is not implemented.');
   }
 
-  const combinedTranslations = deepMerge({}, globalTranslations, translations || {});
+  const { locale, fallbackLocale } = context;
 
-  const getNestedValue = (obj: any, path: string): string | undefined => {
-    const parts = path.split('.');
-    let current = obj;
-    for (const part of parts) {
-      if (current[part] === undefined) {
+  return React.useMemo(() => {
+    // Local translations take precedence over global ones, locale by locale.
+    // Globals are read on each call, so translations set after mount are still found.
+    const getNestedValue = (path: string): string | undefined => {
+      const globalLeaf = getNode(globalTranslations, path);
+      const localLeaf = getNode(translations, path);
+
+      if (!globalLeaf && !localLeaf) {
         return undefined;
       }
-      current = current[part];
-    }
-    return typeof current === 'object' ? current[context.locale] || current[context.fallbackLocale] : undefined;
-  };
 
-  const staticMessages: StaticTranslationFunction<T> = (key, values): string => {
-    const translation = getNestedValue(combinedTranslations, key as string);
+      const leaf = { ...globalLeaf, ...localLeaf };
+      return leaf[locale] || leaf[fallbackLocale];
+    };
 
-    if (translation === undefined) {
-      console.warn(`Translation key "${key}" not found`);
-      return key as string;
-    }
+    const staticMessages: StaticTranslationFunction<T> = (key, values): string => {
+      const translation = getNestedValue(key as string);
 
-    if (!values) return translation;
-
-    return translation.replace(/\{([^{}]+)\}/g, (match, param: string) =>
-      Object.prototype.hasOwnProperty.call(values, param) ? String(values[param]) : match
-    );
-  };
-
-  const richMessages: RichTranslationFunction<T> = (key, components = {}) => {
-    const translation = getNestedValue(combinedTranslations, key as string);
-
-    if (translation === undefined) {
-      console.warn(`Translation key "${key}" not found`);
-      return key;
-    }
-
-    const regex = /<(\w+)\s*\/>|<(\w+)>([^<]*)<\/\2>/g;
-
-    let lastIndex = 0;
-    const result: React.ReactNode[] = [];
-
-    translation.replace(regex, (match, selfClosingTag, pairedTag, content, index) => {
-      const tag = selfClosingTag ?? pairedTag;
-
-      if (index > lastIndex) {
-        result.push(translation.slice(lastIndex, index));
+      if (translation === undefined) {
+        console.warn(`Translation key "${key}" not found`);
+        return key as string;
       }
 
-      if (components[tag]) {
-        const key = `${tag}-${index}`;
-        const componentContent = content?.trim();
-        const element = components[tag](componentContent);
-        result.push(React.createElement(React.Fragment, { key }, element));
-      } else {
-        result.push(match);
+      if (!values) return translation;
+
+      return translation.replace(/\{([^{}]+)\}/g, (match, param: string) =>
+        Object.prototype.hasOwnProperty.call(values, param) ? String(values[param]) : match
+      );
+    };
+
+    const richMessages: RichTranslationFunction<T> = (key, components = {}) => {
+      const translation = getNestedValue(key as string);
+
+      if (translation === undefined) {
+        console.warn(`Translation key "${key}" not found`);
+        return key;
       }
 
-      lastIndex = index + match.length;
-      return match;
+      const regex = /<(\w+)\s*\/>|<(\w+)>([^<]*)<\/\2>/g;
+
+      let lastIndex = 0;
+      const result: React.ReactNode[] = [];
+
+      translation.replace(regex, (match, selfClosingTag, pairedTag, content, index) => {
+        const tag = selfClosingTag ?? pairedTag;
+
+        if (index > lastIndex) {
+          result.push(translation.slice(lastIndex, index));
+        }
+
+        if (components[tag]) {
+          const key = `${tag}-${index}`;
+          const componentContent = content?.trim();
+          const element = components[tag](componentContent);
+          result.push(React.createElement(React.Fragment, { key }, element));
+        } else {
+          result.push(match);
+        }
+
+        lastIndex = index + match.length;
+        return match;
+      });
+
+      if (lastIndex < translation.length) {
+        result.push(translation.slice(lastIndex));
+      }
+
+      return result;
+    };
+
+    const exists = (key: string): boolean => {
+      return Boolean(getNestedValue(key))
+    }
+
+    return Object.assign(staticMessages, {
+      rich: richMessages, exists,
+      locale
     });
-
-    if (lastIndex < translation.length) {
-      result.push(translation.slice(lastIndex));
-    }
-
-    return result;
-  };
-
-  const exists = (key: string): boolean => {
-    return Boolean(getNestedValue(combinedTranslations, key))
-  }
-
-  const t = Object.assign(staticMessages, {
-    rich: richMessages, exists,
-    locale: context.locale
-  });
-
-  return t;
+  }, [translations, locale, fallbackLocale]);
 };
