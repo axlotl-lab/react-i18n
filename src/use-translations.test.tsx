@@ -106,6 +106,43 @@ describe('Translations', () => {
       expect(result.current('welcome', { name: 'John' })).toBe('Welcome, John!');
     });
 
+    describe('interpolation edge cases', () => {
+      const wrapper = mockTranslationsProvider('en');
+
+      const edgeCaseTranslations = {
+        greeting: { en: 'Hello {name}' },
+        pair: { en: '{a} and {b}' },
+        total: { en: 'Total: {a+b}' },
+        missing: { en: 'Hello {name}, you have {count} messages' }
+      };
+
+      it('should insert values containing "$" literally', () => {
+        const { result } = renderHook(() => useTranslations(edgeCaseTranslations), { wrapper });
+
+        expect(result.current('greeting', { name: '$&' })).toBe('Hello $&');
+        expect(result.current('greeting', { name: 'US$$5' })).toBe('Hello US$$5');
+      });
+
+      it('should not replace placeholders inside interpolated values', () => {
+        const { result } = renderHook(() => useTranslations(edgeCaseTranslations), { wrapper });
+
+        expect(result.current('pair', { a: '{b}', b: 'X' })).toBe('{b} and X');
+      });
+
+      it('should support parameter names with regex special characters', () => {
+        const { result } = renderHook(() => useTranslations(edgeCaseTranslations), { wrapper });
+
+        expect(result.current('total', { 'a+b': 5 })).toBe('Total: 5');
+      });
+
+      it('should keep placeholders without a value', () => {
+        const { result } = renderHook(() => useTranslations(edgeCaseTranslations), { wrapper });
+
+        expect(result.current('missing', { name: 'Ana' })).toBe('Hello Ana, you have {count} messages');
+        expect(result.current('missing', { name: 'Ana', toString: 'x' } as any)).toBe('Hello Ana, you have {count} messages');
+      });
+    });
+
     it('should handle rich text translations', () => {
       const wrapper = mockTranslationsProvider('en');
 

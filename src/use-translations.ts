@@ -81,14 +81,11 @@ export function useTranslations<T>(
       return key as string;
     }
 
-    let result = translation;
-    if (values) {
-      Object.entries(values).forEach(([param, value]) => {
-        result = result.replace(new RegExp(`{${param}}`, 'g'), String(value));
-      });
-    }
+    if (!values) return translation;
 
-    return result;
+    return translation.replace(/\{([^{}]+)\}/g, (match, param: string) =>
+      Object.prototype.hasOwnProperty.call(values, param) ? String(values[param]) : match
+    );
   };
 
   const richMessages: RichTranslationFunction<T> = (key, components = {}) => {
